@@ -1,0 +1,15 @@
+# Сборка и временные файлы
+**/build/
+**/.gradle/
+**/target/
+**/out/
+
+# Настройки IDE
+**/.idea/
+*.iml
+*.iws
+*.ipr
+
+# Логи и конфиги
+*.log
+.DS_Store 

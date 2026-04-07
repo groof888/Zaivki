@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: request-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5435/request_db
+    username: admin
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  # 1. Ликибейз отдельно
+  liquibase:
+    change-log: classpath:db/changelog-master.xml
+    enabled: true
+
+  # 2. JPA/Hibernate отдельно (были внутри liquibase)
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+  # 3. Остальные настройки инфраструктуры
+  data:
+    redis:
+      host: localhost
+      port: 6380
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: request-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
