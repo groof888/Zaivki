@@ -1,15 +1,13 @@
 package org.example.zaivki.service
 
+import org.example.zaivki.client.MasterClient
 import org.example.zaivki.dto.TicketRequestDto
 import org.example.zaivki.dto.TicketResponseDto
 import org.example.zaivki.entity.RequestStatus
 import org.example.zaivki.entity.Ticket
-import org.example.zaivki.entity.ServiceItem
-import org.example.zaivki.repository.ServiceItemRepository
 import org.example.zaivki.repository.TicketRepository
 import org.example.zaivki.repository.UserRepository
-import org.springframework.cache.annotation.Cacheable
-import org.springframework.kafka.core.KafkaTemplate
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -18,68 +16,82 @@ import java.time.LocalDateTime
 class TicketService(
     private val ticketRepository: TicketRepository,
     private val userRepository: UserRepository,
-    private val serviceItemRepository: ServiceItemRepository,
-    private val kafkaTemplate: KafkaTemplate<String, Any>
+    private val masterClient: MasterClient
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
-    fun getAllForReport(): List<Ticket> = ticketRepository.findAll()
-
-    @Transactional
-    fun takeToWork(ticketId: Long, workerId: Long) {
-        val ticket = ticketRepository.findById(ticketId)
-            .orElseThrow { Exception("Заявка не найдена") }
-        ticket.employeeId = workerId
-        ticket.status = RequestStatus.IN_PROGRESS
-        ticketRepository.save(ticket)
-    }
-
-    @Transactional
-    fun completeTicket(ticketId: Long, rating: Int, review: String) {
-        val ticket = ticketRepository.findById(ticketId)
-            .orElseThrow { Exception("Заявка не найдена") }
-        ticket.status = RequestStatus.DONE
-        ticket.completedAt = LocalDateTime.now()
-        ticket.rating = rating
-        ticket.reviewText = review
-        ticketRepository.save(ticket)
-    }
-
-    @Transactional
     fun createTicket(dto: TicketRequestDto): TicketResponseDto {
         val userEntity = userRepository.findById(dto.userId)
-            .orElseThrow { Exception("Пользователь с ID ${dto.userId} не найден") }
+            .orElseThrow { RuntimeException("Пользователь не найден") }
 
         val ticket = Ticket(
             description = dto.description,
-            employeeId = dto.employeeId,
             user = userEntity,
             status = RequestStatus.CREATED
         )
-
-        val savedTicket = ticketRepository.save(ticket)
-
-        return TicketResponseDto(
-            id = savedTicket.id!!,
-            description = savedTicket.description,
-            status = savedTicket.status.name,
-            userId = savedTicket.user.id!!
-        )
+        return mapToResponseDto(ticketRepository.save(ticket))
     }
 
-    @Cacheable(value = ["services"])
-    fun getAvailableServices(): List<ServiceItem> {
-        return serviceItemRepository.findAll()
+    fun getAllForReport(): List<TicketResponseDto> =
+        ticketRepository.findAll().map { mapToResponseDto(it) }
+
+    fun getTicketById(id: Long): TicketResponseDto {
+        val entity = ticketRepository.findById(id)
+            .orElseThrow { RuntimeException("Заявка с ID $id не найдена") }
+        return mapToResponseDto(entity)
     }
 
     @Transactional
-    fun handleInjury(ticketId: Long, workerLastName: String) {
+    fun takeToWork(ticketId: Long, workerId: Long) {
+        val master = masterClient.getMasterById(workerId)
+            ?: throw RuntimeException("Мастер с ID $workerId не найден в системе мастеров")
+
         val ticket = ticketRepository.findById(ticketId)
-            .orElseThrow { Exception("Заявка не найдена") }
+            .orElseThrow { RuntimeException("Заявка с ID $ticketId не найдена") }
+
+        ticket.status = RequestStatus.IN_PROGRESS
+        ticket.employeeId = master.id
+
+        // 4. Логирование
+        log.info("Заявка #{} принята в работу мастером: {} (ID: {})", ticketId, master.name, master.id)
+
+        ticketRepository.save(ticket)
+    }
+
+    @Transactional
+    fun completeTicket(id: Long, rating: Int, review: String) {
+        val ticket = ticketRepository.findById(id)
+            .orElseThrow { RuntimeException("Заявка не найдена") }
+
+        ticket.status = RequestStatus.DONE
+        ticket.rating = rating
+        ticket.reviewText = review
+        ticket.completedAt = LocalDateTime.now()
+
+        log.info("Заявка #{} успешно завершена с рейтингом {}", id, rating)
+        ticketRepository.save(ticket)
+    }
+
+    @Transactional
+    fun handleInjury(id: Long, workerLastName: String) {
+        masterClient.notifyInjury(workerLastName)
+
+        val ticket = ticketRepository.findById(id)
+            .orElseThrow { RuntimeException("Заявка не найдена") }
 
         ticket.status = RequestStatus.FAILED_INJURY
-        ticketRepository.save(ticket)
+        ticket.description = "${ticket.description} [ИНЦИДЕНТ: Травма сотрудника $workerLastName]"
 
-        val message = """{"workerId": ${ticket.employeeId}, "lastName": "$workerLastName", "payout": 50000}"""
-        kafkaTemplate.send("worker-injury-topic", message)
+        log.warn("ВНИМАНИЕ: Травма мастера {} на заявке #{}", workerLastName, id)
+        ticketRepository.save(ticket)
+    }
+
+    private fun mapToResponseDto(entity: Ticket): TicketResponseDto {
+        return TicketResponseDto(
+            id = entity.id ?: 0,
+            description = entity.description,
+            status = entity.status.name,
+            userId = entity.user.id ?: 0
+        )
     }
 }

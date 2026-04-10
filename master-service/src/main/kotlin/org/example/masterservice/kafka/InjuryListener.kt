@@ -1,6 +1,5 @@
 package org.example.masterservice.kafka
 
-// ТУТ ВАЖНЫ ИМПОРТЫ: нажми Alt+Enter на красных словах или вставь эти строки
 import org.example.masterservice.dto.MasterRegistrationDto
 import org.example.masterservice.dto.TaskAssignmentDto
 import org.example.masterservice.entity.EmergencyEvent

@@ -3,7 +3,7 @@ package org.example.masterservice.entity
 import jakarta.persistence.*
 
 enum class MasterStatus {
-    AVAILABLE, BUSY, FIRED
+    AVAILABLE, BUSY, FIRED, INJURED
 }
 
 @Entity
@@ -15,7 +15,7 @@ class Master(
 
     val name: String,
     val specialization: String,
-    val experienceYears: Int,
+    val experienceYears: Int = 0,
 
     @Enumerated(EnumType.STRING)
     var status: MasterStatus = MasterStatus.AVAILABLE,

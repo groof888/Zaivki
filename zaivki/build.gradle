@@ -1,9 +1,9 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version '2.2.21'
-    id 'org.jetbrains.kotlin.plugin.spring' version '2.2.21'
+    id 'org.jetbrains.kotlin.jvm' version '1.9.21' // Исправил версию на стабильную, если у тебя была 2.x
+    id 'org.jetbrains.kotlin.plugin.spring' version '1.9.21'
     id 'org.springframework.boot' version '3.2.4'
     id 'io.spring.dependency-management' version '1.1.7'
-    id 'org.jetbrains.kotlin.plugin.jpa' version '2.2.21'
+    id 'org.jetbrains.kotlin.plugin.jpa' version '1.9.21'
 }
 
 group = 'org.example'
@@ -21,31 +21,38 @@ repositories {
 }
 
 dependencies {
-    // Стандартные зависимости Spring Boot
+    // База и Web
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'org.liquibase:liquibase-core'
-    // Работа с базой данных PostgreSQL
     runtimeOnly 'org.postgresql:postgresql'
 
-    // Поддержка кэширования (Redis)
+    // Redis
     implementation 'org.springframework.boot:spring-boot-starter-cache'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
-    // Поддержка Kafka
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.kafka:spring-kafka")
+    // Kafka
+    implementation 'org.springframework.kafka:spring-kafka'
 
-    // Тестирование
+    // Swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
+    // Тестирование (Удалил дубликаты и добавил лаунчер)
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    testImplementation 'io.mockk:mockk:1.13.8'
+    testImplementation 'io.mockk:mockk-agent-jvm:1.13.8'
+
+    // Это решит проблему "Failed to load JUnit Platform"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.addAll '-Xjsr305=strict', '-Xannotation-default-target=param-property'
+// Настройка компилятора под Groovy DSL
+compileKotlin {
+    kotlinOptions {
+        freeCompilerArgs = ['-Xjsr305=strict', '-Xannotation-default-target=param-property']
+        jvmTarget = "17"
     }
 }
 
@@ -55,6 +62,7 @@ allOpen {
     annotation 'jakarta.persistence.Embeddable'
 }
 
-tasks.named('test') {
+// ПРАВИЛЬНЫЙ запуск тестов для Groovy
+test {
     useJUnitPlatform()
 }

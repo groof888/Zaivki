@@ -10,5 +10,6 @@ interface MasterRepository : JpaRepository<Master, Long> {
 
     fun findByName(name: String): Master?
 
-    fun findByUser(user: UserEntity): Master?
+    fun findByUserName(name: String): Master?
+
 }
