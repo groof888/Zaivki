@@ -1,6 +1,8 @@
 package org.example.masterservice.entity
 
 import jakarta.persistence.*
+import java.time.Year
+
 
 @Entity
 @Table(name = "master_tasks")
@@ -11,5 +13,6 @@ class MasterTask(
     val masterId: Long,
     val ticketId: Long,
     val description: String,
-    var status: String = "IN_PROGRESS" // По умолчанию задача в работе
+
+    var status: String
 )

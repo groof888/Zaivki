@@ -4,7 +4,7 @@ import jakarta.persistence.*
 import java.time.LocalDateTime
 
 enum class RequestStatus {
-    CREATED, WAITING, IN_PROGRESS, PAUSED, DONE, FAILED_INJURY
+    NEW, WAITING, IN_PROGRESS, PAUSED, DONE, FAILED_INJURY
 }
 
 @Entity
@@ -14,10 +14,15 @@ class Ticket(
     val id: Long? = null,
 
     var description: String,
-    var employeeId: Long? = null,
+
+    @Column(name = "employee_id")
+    var masterId: Long? = null,
 
     @Enumerated(EnumType.STRING)
-    var status: RequestStatus = RequestStatus.CREATED,
+    var status: RequestStatus = RequestStatus.NEW,
+
+    @Enumerated(EnumType.STRING)
+    var specialization: Specialization,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

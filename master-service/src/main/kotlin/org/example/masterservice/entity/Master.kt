@@ -9,18 +9,16 @@ enum class MasterStatus {
 @Entity
 @Table(name = "masters")
 class Master(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
 
     val name: String,
-    val specialization: String,
-    val experienceYears: Int = 0,
+
+    @Enumerated(EnumType.STRING)
+    val specialization: Specialization,
 
     @Enumerated(EnumType.STRING)
     var status: MasterStatus = MasterStatus.AVAILABLE,
 
-    @OneToOne(cascade = [CascadeType.ALL])
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
-    val user: UserEntity
+    val userId: Long
 )

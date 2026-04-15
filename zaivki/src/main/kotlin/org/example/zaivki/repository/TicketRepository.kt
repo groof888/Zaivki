@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface TicketRepository : JpaRepository<Ticket, Long> {
-    fun findAllByEmployeeId(employeeId: Long): List<Ticket>
+    fun findAllByUserId(userId: Long): List<Ticket>
 }

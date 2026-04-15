@@ -1,0 +1,119 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260407-1-init
+      author: groof888
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: users
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: first_name
+                  type: VARCHAR(255)
+              - column:
+                  name: last_name
+                  type: VARCHAR(255)
+              - column:
+                  name: address
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: 20260407-2-init-services
+      author: groof888
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: services
+      changes:
+        - createTable:
+            tableName: services
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+              - column:
+                  name: price
+                  type: DOUBLE
+
+  - changeSet:
+      id: 20260407-3-init-tickets
+      author: groof888
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            tableExists:
+              tableName: tickets
+      changes:
+        - createTable:
+            tableName: tickets
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1000)
+              - column:
+                  name: employee_id
+                  type: BIGINT
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_ticket_user
+                    referencedTableName: users
+                    referencedColumnNames: id
+              - column:
+                  name: completed_at
+                  type: TIMESTAMP
+              - column:
+                  name: rating
+                  type: INT
+              - column:
+                  name: review_text
+                  type: VARCHAR(2000)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 4
+      author: groof888
+      comment: Add specialization column to tickets table
+      changes:
+        - addColumn:
+            tableName: tickets
+            columns:
+              - column:
+                  name: specialization
+                  type: VARCHAR(50)
+                  defaultValue: ELECTRICIAN
+                  constraints:
+                    nullable: false

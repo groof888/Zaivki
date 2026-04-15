@@ -1,6 +1,7 @@
 package org.example.masterservice.entity
 
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.LocalDateTime
 
 @Entity
@@ -17,7 +18,7 @@ class EmergencyEvent(
     val workerLastName: String,
 
     @Column(name = "payout_amount", nullable = false)
-    val payoutAmount: java.math.BigDecimal = java.math.BigDecimal("50000.00"),
+    val payoutAmount: BigDecimal = BigDecimal("50000.00"),
 
     @Column(name = "event_date", nullable = false)
     val eventDate: LocalDateTime = LocalDateTime.now()

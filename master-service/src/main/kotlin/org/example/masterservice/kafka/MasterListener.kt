@@ -17,35 +17,26 @@ class MasterListener(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    @KafkaListener(topics = ["master-registration-topic"], groupId = "master-group")
+    @KafkaListener(topics = ["master-registration-topic"], groupId = "master-group-v100")
     fun listenRegistration(dto: MasterRegistrationDto) {
-        log.info("Получено сообщение на регистрацию мастера: $dto")
+        log.info("Регистрация мастера: $dto")
 
         val externalId = dto.userId ?: run {
-            log.error("ОТКАЗ: Получено сообщение без userId")
+            log.warn("userId отсутствует, пропускаем")
             return
         }
-
-        val existingUser = userRepository.findByExternalId(externalId)
-
-        if (existingUser != null && masterRepository.findByUserName(existingUser.name ?: "") != null) {
-            log.warn("ОТКАЗ: Мастер с externalId $externalId уже существует")
-            return
-        }
-
-        val user = existingUser ?: userRepository.save(
+        val user = userRepository.findByExternalId(externalId) ?: userRepository.save(
             UserEntity(externalId = externalId, name = dto.name ?: "Anonymous")
         )
 
-        val newMaster = Master(
-            name = dto.name ?: "New Master",
-            specialization = dto.specialization ?: "General",
-            experienceYears = dto.experienceYears ?: 0,
-            user = user,
-            status = MasterStatus.AVAILABLE
-        )
-
-        masterRepository.save(newMaster)
-        log.info("УСПЕХ: Мастер ${newMaster.name} зарегистрирован в базе.")
+        if (masterRepository.findByUserId(externalId) == null) {
+            masterRepository.save(Master(
+                name = dto.name ?: "New Master",
+                specialization = dto.specialization ?: Specialization.ELECTRICIAN,
+                userId = externalId,
+                status = MasterStatus.AVAILABLE
+            ))
+            log.info("Мастер ${dto.name} зарегистрирован.")
+        }
     }
 }

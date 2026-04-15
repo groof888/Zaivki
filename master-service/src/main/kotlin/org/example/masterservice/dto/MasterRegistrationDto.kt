@@ -1,17 +1,16 @@
+// В файле MasterRegistrationDto.kt
 package org.example.masterservice.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
+import org.example.masterservice.entity.Specialization
 
 data class MasterRegistrationDto(
-    @JsonProperty("userId")
-    val userId: Long? = null,
-
-    @JsonProperty("name")
-    val name: String? = null,
-
-    @JsonProperty("specialization")
-    val specialization: String? = null,
-
-    @JsonProperty("experienceYears")
-    val experienceYears: Int? = null
+    @field:NotNull
+    val userId: Long,
+    @field:NotBlank
+    val name: String,
+    @field:NotNull
+    val specialization: Specialization,
+    val experienceYears: Int?
 )

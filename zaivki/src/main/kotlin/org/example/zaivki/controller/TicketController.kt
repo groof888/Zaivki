@@ -1,5 +1,7 @@
 package org.example.zaivki.controller
 
+import jakarta.validation.Valid
+import org.example.zaivki.dto.CompletionRequest
 import org.example.zaivki.dto.TicketRequestDto
 import org.example.zaivki.dto.TicketResponseDto
 import org.example.zaivki.service.TicketService
@@ -12,46 +14,33 @@ import org.springframework.web.bind.annotation.*
 class TicketController(private val ticketService: TicketService) {
 
     @PostMapping
-    fun createTicket(@RequestBody dto: TicketRequestDto): ResponseEntity<TicketResponseDto> {
-        val ticket = ticketService.createTicket(dto)
-        return ResponseEntity.status(HttpStatus.CREATED).body(ticket)
+    fun createTicket(@Valid @RequestBody dto: TicketRequestDto): ResponseEntity<TicketResponseDto> {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ticketService.createTicket(dto))
     }
 
     @GetMapping
-    fun getAllTickets(): ResponseEntity<List<TicketResponseDto>> {
-        return ResponseEntity.ok(ticketService.getAllForReport())
-    }
+    fun getAllTickets(): ResponseEntity<List<TicketResponseDto>> =
+        ResponseEntity.ok(ticketService.getAllForReport())
 
     @GetMapping("/{id}")
-    fun getTicketById(@PathVariable id: Long): ResponseEntity<TicketResponseDto> {
-        return ResponseEntity.ok(ticketService.getTicketById(id))
-    }
-
-    @PatchMapping("/{id}/assignment")
-    fun takeToWork(
-        @PathVariable id: Long,
-        @RequestParam workerId: Long
-    ): ResponseEntity<Void> {
-        ticketService.takeToWork(id, workerId)
-        return ResponseEntity.noContent().build()
-    }
+    fun getTicketById(@PathVariable id: Long): ResponseEntity<TicketResponseDto> =
+        ResponseEntity.ok(ticketService.getTicketById(id))
 
     @PatchMapping("/{id}/completion")
     fun completeTicket(
         @PathVariable id: Long,
-        @RequestParam rating: Int,
-        @RequestParam review: String
+        @Valid @RequestBody completion: CompletionRequest
     ): ResponseEntity<Void> {
-        ticketService.completeTicket(id, rating, review)
+        ticketService.completeTicket(id, completion.rating, completion.review)
         return ResponseEntity.noContent().build()
     }
 
     @PostMapping("/{id}/incidents")
     fun reportInjury(
         @PathVariable id: Long,
-        @RequestParam workerLastName: String
+        @RequestParam masterId: Long
     ): ResponseEntity<Void> {
-        ticketService.handleInjury(id, workerLastName)
+        ticketService.handleInjury(id, masterId)
         return ResponseEntity.status(HttpStatus.CREATED).build()
     }
 }

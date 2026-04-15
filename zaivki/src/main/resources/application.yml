@@ -11,12 +11,10 @@ spring:
     password: password
     driver-class-name: org.postgresql.Driver
 
-  # 1. Ликибейз отдельно
   liquibase:
-    change-log: classpath:db/changelog-master.xml
+    change-log: classpath:db/changelog-master.yaml
     enabled: true
 
-  # 2. JPA/Hibernate отдельно (были внутри liquibase)
   jpa:
     hibernate:
       ddl-auto: validate
@@ -26,7 +24,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
-  # 3. Остальные настройки инфраструктуры
   data:
     redis:
       host: localhost
@@ -42,7 +39,10 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
+app:
+  integration:
+    master-service:
+      url: http://localhost:8081/api/v1/masters
 springdoc:
   api-docs:
     path: /v3/api-docs
