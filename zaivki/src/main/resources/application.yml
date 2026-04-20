@@ -6,7 +6,7 @@ spring:
     name: request-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5435/request_db
+    url: ${DB_URL:jdbc:postgresql://localhost:5435/postgres}
     username: admin
     password: password
     driver-class-name: org.postgresql.Driver
@@ -30,7 +30,7 @@ spring:
       port: 6380
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_URL:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer

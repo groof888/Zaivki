@@ -6,7 +6,7 @@ spring:
     name: master_db
 
   datasource:
-    url: jdbc:postgresql://localhost:5436/master_db
+    url: ${DB_URL:jdbc:postgresql://localhost:5436/postgres}
     username: admin
     password: password
     driver-class-name: org.postgresql.Driver
@@ -26,7 +26,7 @@ spring:
 
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_URL:localhost:9092}
     consumer:
       group-id: master-service-group-v6
       auto-offset-reset: earliest
