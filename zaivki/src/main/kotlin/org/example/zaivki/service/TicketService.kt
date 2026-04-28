@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.retry.support.RetryTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -19,38 +20,33 @@ import java.time.LocalDateTime
 class TicketService(
     private val ticketRepository: TicketRepository,
     private val userRepository: UserRepository,
-    private val kafkaTemplate: KafkaTemplate<String, Any>
+    private val kafkaTemplate: KafkaTemplate<String, Any>,
+    private val retryTemplate: RetryTemplate
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
     fun createTicket(dto: TicketRequestDto): TicketResponseDto {
-        val user = userRepository.findById(dto.userId)
-            .orElseThrow { NoSuchElementException("Пользователь не найден") }
+        return retryTemplate.execute<TicketResponseDto, Exception> {
+            val user = userRepository.findById(dto.userId)
+                .orElseThrow { NoSuchElementException("Пользователь не найден") }
 
-        val ticket = Ticket(
-            description = dto.description,
-            user = user,
-            specialization = dto.specialization,
-            status = RequestStatus.NEW
-        )
-        val saved = ticketRepository.save(ticket)
+            val ticket = Ticket(
+                description = dto.description,
+                user = user,
+                specialization = dto.specialization,
+                status = RequestStatus.NEW
+            )
+            val saved = ticketRepository.save(ticket)
 
-        kafkaTemplate.send("ticket-created-topic", TicketCreatedEvent(
-            saved.id!!,
-            saved.specialization.name
-        ))
-        log.info("Создана заявка #{}", saved.id)
-        return mapToResponseDto(saved)
-    }
+            kafkaTemplate.send("ticket-created-topic", TicketCreatedEvent(
+                saved.id!!,
+                saved.specialization.name
+            ))
 
-    fun getAllForReport(): List<TicketResponseDto> =
-        ticketRepository.findAll().map { mapToResponseDto(it) }
-
-    fun getTicketById(id: Long): TicketResponseDto {
-        val entity = ticketRepository.findById(id)
-            .orElseThrow { RuntimeException("Заявка с ID $id не найдена") }
-        return mapToResponseDto(entity)
+            log.info("Создана заявка #{}", saved.id)
+            mapToResponseDto(saved)
+        }
     }
 
     @Transactional
@@ -82,11 +78,15 @@ class TicketService(
     @KafkaListener(topics = ["ticket-assigned-topic"], groupId = "zaivki-group")
     @Transactional
     fun handleAssignment(event: TicketAssignedEvent) {
-        val ticket = ticketRepository.findById(event.ticketId).orElse(null) ?: return
-        ticket.masterId = event.masterId
-        ticket.status = RequestStatus.IN_PROGRESS
-        ticketRepository.save(ticket)
+        retryTemplate.execute<Unit, Exception> {
+            val ticket = ticketRepository.findById(event.ticketId).orElse(null) ?: return@execute
+            ticket.masterId = event.masterId
+            ticket.status = RequestStatus.IN_PROGRESS
+            ticketRepository.save(ticket)
+        }
     }
+    fun getAllTickets(): List<Ticket> = ticketRepository.findAll()
+    fun getTicketById(id: Long): Ticket? = ticketRepository.findById(id).orElse(null)
 
     private fun mapToResponseDto(entity: Ticket): TicketResponseDto = TicketResponseDto(
         id = entity.id ?: 0,

@@ -19,12 +19,31 @@ class TicketController(private val ticketService: TicketService) {
     }
 
     @GetMapping
-    fun getAllTickets(): ResponseEntity<List<TicketResponseDto>> =
-        ResponseEntity.ok(ticketService.getAllForReport())
+    fun getAllTickets(): ResponseEntity<List<TicketResponseDto>> {
+        // Вызываем правильное имя метода и мапим результат в DTO
+        val tickets = ticketService.getAllTickets().map { ticket ->
+            TicketResponseDto(
+                id = ticket.id ?: 0,
+                description = ticket.description,
+                status = ticket.status.name,
+                userId = ticket.user.id ?: 0
+            )
+        }
+        return ResponseEntity.ok(tickets)
+    }
 
     @GetMapping("/{id}")
-    fun getTicketById(@PathVariable id: Long): ResponseEntity<TicketResponseDto> =
-        ResponseEntity.ok(ticketService.getTicketById(id))
+    fun getTicketById(@PathVariable id: Long): ResponseEntity<TicketResponseDto> {
+        val ticket = ticketService.getTicketById(id)
+            ?: return ResponseEntity.notFound().build()
+
+        return ResponseEntity.ok(TicketResponseDto(
+            id = ticket.id ?: 0,
+            description = ticket.description,
+            status = ticket.status.name,
+            userId = ticket.user.id ?: 0
+        ))
+    }
 
     @PatchMapping("/{id}/completion")
     fun completeTicket(
